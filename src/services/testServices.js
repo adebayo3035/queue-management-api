@@ -23,7 +23,7 @@ async function testServices() {
         const waiting = await QueueService.getWaitingList();
         success(`Waiting list: ${waiting.totalWaiting} people waiting`);
         
-        info('✅ All service tests passed!');
+        info('All service tests passed!');
         process.exit(0);
     } catch (err) {
         error(`Service test failed: ${err.message}`);

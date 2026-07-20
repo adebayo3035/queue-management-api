@@ -25,7 +25,7 @@ async function testModels() {
         const stats = await QueueEntry.getStats(today);
         success(`Today's stats: Total=${stats.total}, Waiting=${stats.waiting}, Completed=${stats.completed}`);
         
-        info('✅ All model tests passed!');
+        info('All model tests passed!');
         process.exit(0);
     } catch (err) {
         error(`Model test failed: ${err.message}`);
