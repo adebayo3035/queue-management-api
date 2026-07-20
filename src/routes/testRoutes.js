@@ -4,13 +4,13 @@ const axios = require('axios');
 const BASE_URL = 'http://localhost:5000/api';
 
 async function testRoutes() {
-    console.log('\n📋 Testing API Routes...\n');
+    console.log('\n Testing API Routes...\n');
     
     try {
         // Test 1: Health check
         console.log('1. Testing health check...');
         const health = await axios.get('http://localhost:5000/health');
-        console.log(`   - Health: ${health.data.status}\n`);
+        console.log(`  - Health: ${health.data.status}\n`);
         
         // Test 2: Generate queue number
         console.log('2. Generating queue number...');

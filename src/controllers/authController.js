@@ -1,6 +1,6 @@
 // src/controllers/authController.js
 const AuthService = require('../services/authService');
-const { info, error } = require('../utils/logger');
+const {log, info, error, warning, success  } = require('../utils/logger');
 
 class AuthController {
     // Admin login
@@ -44,6 +44,31 @@ class AuthController {
             return res.status(500).json({
                 success: false,
                 message: 'Failed to get profile'
+            });
+        }
+    }
+
+      // Register new admin
+    static async registerAdmin(req, res) {
+        try {
+            const { email, password, fullName } = req.body;
+            
+            info(`Registering new admin: ${email}`);
+            
+            const result = await AuthService.registerAdmin(email, password, fullName);
+            
+            success(`New admin registered: ${email}`);
+            
+            return res.status(201).json({
+                success: true,
+                message: 'Admin registered successfully',
+                data: result
+            });
+        } catch (err) {
+            error(`Register admin error: ${err.message}`);
+            return res.status(400).json({
+                success: false,
+                message: err.message || 'Failed to register admin'
             });
         }
     }

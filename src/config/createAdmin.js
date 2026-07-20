@@ -25,7 +25,7 @@ async function createAdmin() {
         
         await db.query(query, [email, hashedPassword, fullName]);
         
-        success(`✅ Admin created successfully!`);
+        success(`Admin created successfully!`);
         info(`Email: ${email}`);
         info(`Password: ${password}`);
         info(`Please change password after first login.`);

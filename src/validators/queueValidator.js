@@ -1,6 +1,8 @@
 // src/validators/queueValidator.js
 const Joi = require('joi');
 
+// src/validators/queueValidator.js
+
 const generateQueueSchema = Joi.object({
     name: Joi.string()
         .min(2)

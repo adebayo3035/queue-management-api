@@ -2,7 +2,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { error } = require('../utils/logger');
+const { info, error, success } = require('../utils/logger');
 
 class AuthService {
     // Admin login
@@ -56,6 +56,40 @@ class AuthService {
             throw err;
         }
     }
+
+     // Register new admin
+    static async registerAdmin(email, password, fullName) {
+        try {
+            // Check if email exists
+            const existingUser = await User.findByEmail(email);
+            if (existingUser) {
+                throw new Error('Email already registered');
+            }
+
+            // Hash password
+            const saltRounds = 10;
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+            // Create user
+            const userId = await User.create(email, hashedPassword, fullName);
+            
+            // Get created user
+            const user = await User.findById(userId);
+
+            info(`New admin registered: ${email}`);
+
+            return {
+                id: user.id,
+                email: user.email,
+                fullName: user.full_name,
+                createdAt: user.created_at
+            };
+        } catch (err) {
+            error(`AuthService.registerAdmin error: ${err.message}`);
+            throw err;
+        }
+    }
+
 }
 
 module.exports = AuthService;

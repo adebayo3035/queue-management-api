@@ -1,56 +1,97 @@
 // src/services/queueService.js
 const DailyCounter = require('../models/DailyCounter');
 const QueueEntry = require('../models/QueueEntry');
-const { error, info } = require('../utils/logger');
+const emailService = require('./emailService');
+const { error, info, success } = require('../utils/logger');
 
 class QueueService {
     // Generate new queue number
-    static async generateNumber(fullName, phone, email = null) {
-        try {
-            // Check if queue is full
-            const isFull = await DailyCounter.isFull();
-            if (isFull) {
-                throw new Error('Queue is full for today. Please try again tomorrow.');
-            }
+    // src/services/queueService.js
+// src/services/queueService.js
 
-            // Get today's counter
-            const counter = await DailyCounter.getToday();
-            const today = new Date().toISOString().split('T')[0];
-            
-            // Calculate new queue number
-            const queueNumber = counter.current_number + 1;
-
-            // Create queue entry
-            const entryId = await QueueEntry.create({
-                queueNumber,
-                fullName,
-                phone,
-                email,
-                serviceDate: today
-            });
-
-            // Update counter
-            await DailyCounter.update(counter.id, queueNumber);
-
-            // Get people ahead
-            const peopleAhead = await QueueEntry.getWaitingCount(today);
-
-            info(`Queue #${queueNumber} generated for ${fullName} (${phone})`);
-
-            return {
-                queueNumber,
-                position: queueNumber,
-                peopleAhead: peopleAhead - 1, // Exclude current
-                fullName,
-                phone,
-                email,
-                status: 'waiting'
-            };
-        } catch (err) {
-            error(`QueueService.generateNumber error: ${err.message}`);
-            throw err;
+static async generateNumber(fullName, phone, email = null) {
+    try {
+        // Check if queue is full
+        const isFull = await DailyCounter.isFull();
+        if (isFull) {
+            throw new Error('Queue is full for today. Please try again tomorrow.');
         }
+
+        const today = new Date().toISOString().split('T')[0];
+
+        // RATE LIMIT: Check if phone already has a queue number today
+        const existingPhone = await QueueEntry.findByPhoneAndDate(phone, today);
+        if (existingPhone) {
+            throw new Error(
+                `You already have a queue number for today (Queue #${existingPhone.queue_number}). ` +
+                `You cannot generate another number.`
+            );
+        }
+
+        // RATE LIMIT: Check if email already has a queue number today (if provided)
+        if (email) {
+            const existingEmail = await QueueEntry.findByEmailAndDate(email, today);
+            if (existingEmail) {
+                throw new Error(
+                    `This email already has a queue number for today (Queue #${existingEmail.queue_number}).`
+                );
+            }
+        }
+
+        // Get today's counter
+        const counter = await DailyCounter.getToday();
+        
+        // Calculate new queue number
+        const queueNumber = counter.current_number + 1;
+
+        console.log(`Generating number: current=${counter.current_number}, new=${queueNumber}`);
+
+        // Create queue entry
+        await QueueEntry.create({
+            queueNumber,
+            fullName,
+            phone,
+            email,
+            serviceDate: today
+        });
+
+        // Update counter
+        await DailyCounter.update(counter.id, queueNumber);
+
+        // Get people ahead
+        const peopleAhead = await QueueEntry.getWaitingCount(today, queueNumber);
+
+        info(`Queue #${queueNumber} generated for ${fullName} (${phone})`);
+        info(`People ahead: ${peopleAhead}`);
+
+        // Send email notification
+        if (email) {
+            try {
+                await emailService.sendQueueNumber(
+                    email,
+                    fullName,
+                    queueNumber,
+                    peopleAhead
+                );
+            } catch (emailErr) {
+                error(`Email notification failed: ${emailErr.message}`);
+            }
+        }
+
+        return {
+            queueNumber,
+            position: queueNumber,
+            peopleAhead: peopleAhead,
+            fullName,
+            phone,
+            email,
+            status: 'waiting'
+        };
+    } catch (err) {
+        error(`QueueService.generateNumber error: ${err.message}`);
+        throw err;
     }
+}
 
     // Check position
     static async checkPosition(queueNumber) {
@@ -63,14 +104,15 @@ class QueueService {
             }
 
             // Get people ahead
-            const peopleAhead = await QueueEntry.getWaitingCount(today);
+            const peopleAheadCount = await QueueEntry.getWaitingCount(today);
+            const peopleAhead = entry.status === 'waiting' ? peopleAheadCount - 1 : 0;
 
             return {
                 queueNumber: entry.queue_number,
                 fullName: entry.full_name,
                 status: entry.status,
                 position: entry.queue_number,
-                peopleAhead: entry.status === 'waiting' ? peopleAhead - 1 : 0,
+                peopleAhead: peopleAhead,
                 generatedAt: entry.generated_at,
                 calledAt: entry.called_at,
                 completedAt: entry.completed_at
@@ -89,7 +131,8 @@ class QueueService {
             const stats = await QueueEntry.getStats(today);
             
             // Get currently serving (first called but not completed)
-            const [calledEntry] = await QueueEntry.getWaitingToday(today);
+            const waitingEntries = await QueueEntry.getWaitingToday(today);
+            const currentlyServing = waitingEntries.length > 0 ? waitingEntries[0].queue_number : null;
             
             return {
                 date: today,
@@ -101,7 +144,7 @@ class QueueService {
                 completed: stats.completed,
                 skipped: stats.skipped,
                 total: stats.total,
-                currentlyServing: calledEntry ? calledEntry.queue_number : null
+                currentlyServing: currentlyServing
             };
         } catch (err) {
             error(`QueueService.getTodayStats error: ${err.message}`);
@@ -151,6 +194,19 @@ class QueueService {
 
             info(`Called queue #${entry.queue_number}: ${entry.full_name}`);
 
+            // Send email notification (if email exists)
+            if (entry.email) {
+                try {
+                    await emailService.sendCalledNotification(
+                        entry.email,
+                        entry.full_name,
+                        entry.queue_number
+                    );
+                } catch (emailErr) {
+                    error(`Email notification failed: ${emailErr.message}`);
+                }
+            }
+
             return {
                 queueNumber: entry.queue_number,
                 fullName: entry.full_name,
@@ -174,14 +230,27 @@ class QueueService {
                 throw new Error('Queue entry not found');
             }
 
-            if (entry.status === 'completed') {
-                throw new Error('This entry is already completed');
-            }
+            // Check status
+        if (entry.status === 'completed') {
+            throw new Error('This entry is already completed');
+        }
+        
+        if (entry.status === 'skipped') {
+            throw new Error('Cannot complete a skipped entry');
+        }
+        
+        // Only allow completion if called
+        if (entry.status === 'waiting') {
+            throw new Error(
+                `Please call queue #${queueNumber} first before completing. ` +
+                `Use the "Call Next" endpoint.`
+            );
+        }
 
-            // Update status to 'completed'
-            await QueueEntry.updateStatus(entry.id, 'completed', 'completed_at');
+        // Update status to 'completed'
+        await QueueEntry.updateStatus(entry.id, 'completed', 'completed_at');
 
-            info(`Completed queue #${queueNumber}: ${entry.full_name}`);
+        info(`Completed queue #${queueNumber}: ${entry.full_name}`);
 
             return {
                 success: true,

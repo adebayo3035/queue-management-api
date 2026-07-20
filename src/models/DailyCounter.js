@@ -4,47 +4,55 @@ const { error } = require('../utils/logger');
 
 class DailyCounter {
     // Get or create counter for today
-    static async getToday() {
-        try {
-            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-            
-            let [rows] = await db.query(
-                'SELECT * FROM daily_counters WHERE service_date = ?',
+    // src/models/DailyCounter.js
+static async getToday() {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        let [rows] = await db.query(
+            'SELECT * FROM daily_counters WHERE service_date = ?',
+            [today]
+        );
+        
+        // If no record for today, create one
+        if (rows.length === 0) {
+            console.log('No counter found, creating new one...');
+            const [result] = await db.query(
+                'INSERT INTO daily_counters (service_date, current_number, capacity) VALUES (?, 0, 100)',
                 [today]
             );
             
-            // If no record for today, create one
-            if (rows.length === 0) {
-                const [result] = await db.query(
-                    'INSERT INTO daily_counters (service_date, current_number, capacity) VALUES (?, 0, 100)',
-                    [today]
-                );
-                
-                [rows] = await db.query(
-                    'SELECT * FROM daily_counters WHERE id = ?',
-                    [result.insertId]
-                );
-            }
-            
-            return rows[0];
-        } catch (err) {
-            error(`DailyCounter.getToday error: ${err.message}`);
-            throw err;
+            [rows] = await db.query(
+                'SELECT * FROM daily_counters WHERE id = ?',
+                [result.insertId]
+            );
         }
+        
+        console.log(`Current counter: ${rows[0].current_number}`);
+        return rows[0];
+    } catch (err) {
+        error(`DailyCounter.getToday error: ${err.message}`);
+        throw err;
     }
+}
 
     // Update counter
-    static async update(id, currentNumber) {
-        try {
-            await db.query(
-                'UPDATE daily_counters SET current_number = ? WHERE id = ?',
-                [currentNumber, id]
-            );
-        } catch (err) {
-            error(`DailyCounter.update error: ${err.message}`);
-            throw err;
-        }
+static async update(id, currentNumber) {
+    try {
+        const [result] = await db.query(
+            'UPDATE daily_counters SET current_number = ? WHERE id = ?',
+            [currentNumber, id]
+        );
+        
+        // Log the update
+        console.log(`Counter updated: ${currentNumber}`);
+        
+        return result;
+    } catch (err) {
+        error(`DailyCounter.update error: ${err.message}`);
+        throw err;
     }
+}
 
     // Update capacity
     static async updateCapacity(id, capacity) {
