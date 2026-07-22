@@ -23,6 +23,63 @@ class AdminController {
         }
     }
 
+    static async getCalledList(req, res) {
+        try {
+            info('Admin: Getting called list');
+            
+            const result = await QueueService.getCalledList();
+            
+            return res.status(200).json({
+                success: true,
+                data: result
+            });
+        } catch (err) {
+            error(`An error occured while getting list of Called User: ${err.message}`);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to get called list'
+            });
+        }
+    }
+
+     static async getCompletedList(req, res) {
+        try {
+            info('Admin: Getting completed list for today');
+            
+            const result = await QueueService.getCompletedList();
+            
+            return res.status(200).json({
+                success: true,
+                data: result
+            });
+        } catch (err) {
+            error(`An error occured while getting list of completed queues for today: ${err.message}`);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to get list of completed calls'
+            });
+        }
+    }
+
+    static async getSkippedList(req, res) {
+        try {
+            info('Admin: Getting skipped list');
+            
+            const result = await QueueService.getSkippedList();
+            
+            return res.status(200).json({
+                success: true,
+                data: result
+            });
+        } catch (err) {
+            error(`An error occured while getting skipped: ${err.message}`);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to get skipped list'
+            });
+        }
+    }
+
     // Admin: Get all entries (full history)
     static async getAllEntries(req, res) {
         try {

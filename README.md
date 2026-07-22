@@ -118,7 +118,7 @@ src/
 │   └── queueValidator.js
 ├── utils/
 │   └── logger.js
-└── app.js
+└── server.js
 
 Common HTTP status codes:
 

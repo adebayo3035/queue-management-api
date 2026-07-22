@@ -178,6 +178,85 @@ static async generateNumber(fullName, phone, email = null) {
         }
     }
 
+    // Admin: get called list
+    static async getCalledList() {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const entries = await QueueEntry.getCalledToday(today);
+            const counter = await DailyCounter.getToday();
+            
+            return {
+                totalCalled: entries.length,
+                capacity: counter.capacity,
+                used: counter.current_number,
+                remaining: counter.capacity - counter.current_number,
+                queue: entries.map(entry => ({
+                    queueNumber: entry.queue_number,
+                    fullName: entry.full_name,
+                    phone: entry.phone,
+                    status: entry.status,
+                    generatedAt: entry.generated_at
+                }))
+            };
+        } catch (err) {
+            error(`QueueService.getCalledList error: ${err.message}`);
+            throw err;
+        }
+    }
+
+    // Admin: get Completed list
+    static async getCompletedList() {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const entries = await QueueEntry.getCompletedToday(today);
+            const counter = await DailyCounter.getToday();
+            
+            return {
+                totalCompleted: entries.length,
+                capacity: counter.capacity,
+                used: counter.current_number,
+                remaining: counter.capacity - counter.current_number,
+                queue: entries.map(entry => ({
+                    queueNumber: entry.queue_number,
+                    fullName: entry.full_name,
+                    phone: entry.phone,
+                    status: entry.status,
+                    generatedAt: entry.generated_at
+                }))
+            };
+        } catch (err) {
+            error(`QueueService.getCompletedList error: ${err.message}`);
+            throw err;
+        }
+    }
+
+    // Admin: get skipped list
+    static async getSkippedList() {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const entries = await QueueEntry.getSkippedToday(today);
+            const counter = await DailyCounter.getToday();
+            
+            return {
+                totalSkipped: entries.length,
+                capacity: counter.capacity,
+                used: counter.current_number,
+                remaining: counter.capacity - counter.current_number,
+                queue: entries.map(entry => ({
+                    queueNumber: entry.queue_number,
+                    fullName: entry.full_name,
+                    phone: entry.phone,
+                    status: entry.status,
+                    generatedAt: entry.generated_at
+                }))
+            };
+        } catch (err) {
+            error(`QueueService.getSkippedList error: ${err.message}`);
+            throw err;
+        }
+    }
+
+
     // Admin: Call next person
     static async callNext() {
         try {

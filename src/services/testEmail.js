@@ -13,7 +13,7 @@ async function testEmail() {
         const result = await emailService.sendQueueNumber(
             testEmail,
             'Test User',
-            42,
+            72,
             10
         );
         

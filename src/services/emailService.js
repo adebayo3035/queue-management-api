@@ -4,14 +4,36 @@ const { info, error, success } = require('../utils/logger');
 
 class EmailService {
     constructor() {
-        // Create transporter
+        // Create transporter with explicit configuration
         this.transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false, // false for port 587 (TLS/STARTTLS)
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASSWORD
-            }
+            },
+            // Optional: Add timeout settings
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000,
+            // Optional: Add debug info for troubleshooting
+            debug: false, // Set to true for detailed logs
+            logger: false // Set to true for detailed logs
         });
+
+        // Verify connection on startup
+        this.verifyConnection();
+    }
+
+    async verifyConnection() {
+        try {
+            await this.transporter.verify();
+            success('Email transporter verified successfully');
+        } catch (err) {
+            error(`Email transporter verification failed: ${err.message}`);
+            // Don't throw - allow the app to continue
+        }
     }
 
     // Send queue number email
@@ -39,7 +61,7 @@ class EmailService {
                 `
             };
 
-            await this.transporter.sendMail(mailOptions);
+            const result = await this.transporter.sendMail(mailOptions);
             success(`Email sent to ${email} for queue #${queueNumber}`);
             return true;
         } catch (err) {
@@ -70,7 +92,7 @@ class EmailService {
                 `
             };
 
-            await this.transporter.sendMail(mailOptions);
+            const result = await this.transporter.sendMail(mailOptions);
             success(`Called notification sent to ${email} for queue #${queueNumber}`);
             return true;
         } catch (err) {

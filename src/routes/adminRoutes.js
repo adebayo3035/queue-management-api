@@ -11,6 +11,9 @@ router.use(auth);
 
 // Queue management
 router.get('/queue/waiting', AdminController.getWaitingList);
+router.get('/queue/called', AdminController.getCalledList);
+router.get('/queue/skipped', AdminController.getSkippedList);
+router.get('/queue/completed', AdminController.getCompletedList);
 router.get('/queue/all', AdminController.getAllEntries);
 router.post('/queue/next', AdminController.callNext);
 router.put('/queue/complete/:number', AdminController.complete);

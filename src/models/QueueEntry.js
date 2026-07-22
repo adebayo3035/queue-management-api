@@ -52,6 +52,54 @@ class QueueEntry {
     }
   }
 
+  // Get all called entries for today
+  static async getCalledToday(serviceDate) {
+    try {
+      const [rows] = await db.query(
+        `SELECT * FROM queue_entries 
+                WHERE service_date = ? AND status = 'called' 
+                ORDER BY queue_number ASC`,
+        [serviceDate],
+      );
+      return rows;
+    } catch (err) {
+      error(`QueueEntry.getCalledToday error: ${err.message}`);
+      throw err;
+    }
+  }
+
+   // Get all called entries for today
+  static async getSkippedToday(serviceDate) {
+    try {
+      const [rows] = await db.query(
+        `SELECT * FROM queue_entries 
+                WHERE service_date = ? AND status = 'skipped' 
+                ORDER BY queue_number ASC`,
+        [serviceDate],
+      );
+      return rows;
+    } catch (err) {
+      error(`QueueEntry.getSkippedToday error: ${err.message}`);
+      throw err;
+    }
+  }
+
+  // Get all completed entries for today
+  static async getCompletedToday(serviceDate) {
+    try {
+      const [rows] = await db.query(
+        `SELECT * FROM queue_entries 
+                WHERE service_date = ? AND status = 'completed' 
+                ORDER BY queue_number ASC`,
+        [serviceDate],
+      );
+      return rows;
+    } catch (err) {
+      error(`QueueEntry.getCompletedToday error: ${err.message}`);
+      throw err;
+    }
+  }
+
   // Get all entries for today (all statuses)
   static async getAllToday(serviceDate) {
     try {
