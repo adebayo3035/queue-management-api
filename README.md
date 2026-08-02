@@ -86,39 +86,6 @@ PUT	                /api/admin/settings/capacity	    Update capacity
 Logging
 Logs are stored in logs/ folder with daily files:
 
-Project Structure
-src/
-├── config/
-│   ├── database.js
-│   ├── init.sql
-│   ├── createAdmin.js
-│   └── testDb.js
-├── models/
-│   ├── User.js
-│   ├── DailyCounter.js
-│   └── QueueEntry.js
-├── services/
-│   ├── authService.js
-│   ├── queueService.js
-│   └── emailService.js
-├── controllers/
-│   ├── authController.js
-│   ├── queueController.js
-│   └── adminController.js
-├── middleware/
-│   ├── auth.js
-│   ├── validation.js
-│   └── errorHandler.js
-├── routes/
-│   ├── authRoutes.js
-│   ├── queueRoutes.js
-│   └── adminRoutes.js
-├── validators/
-│   ├── authValidator.js
-│   └── queueValidator.js
-├── utils/
-│   └── logger.js
-└── server.js
 
 Common HTTP status codes:
 
